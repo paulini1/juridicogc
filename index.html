@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Assessoria Jurídica — Câmara Municipal de General Câmara/RS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+:root {
+  --bg: #f5f0e8; --bg-dark: #ebe5d9; --card: #ffffff;
+  --border: #d4c9b8; --border-light: #e8e0d2;
+  --accent: #1a3a2a; --accent-light: #2d5c42; --accent-pale: #e8f0eb;
+  --gold: #8b7355; --text: #2c2416; --text-mid: #5c5040;
+  --text-light: #8a7e6e; --red: #9b3030; --white: #ffffff;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family:'Source Sans 3',sans-serif; background:var(--bg); color:var(--text); height:100vh; overflow:hidden; }
+::-webkit-scrollbar { width:6px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:#c4b5a0; border-radius:3px; }
+
+@keyframes pulse { 0%,100%{opacity:.3} 50%{opacity:1} }
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+#app { display:flex; flex-direction:column; height:100vh; position:relative; }
+.bg-texture {
+  position:absolute; inset:0; opacity:0.03; pointer-events:none; z-index:0;
+  background-image:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%23000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Header */
+header {
+  background:var(--accent); color:var(--white); padding:0 24px;
+  height:64px; display:flex; align-items:center;
+  position:relative; z-index:10; box-shadow:0 2px 12px rgba(0,0,0,0.15);
+}
+.header-inner { display:flex; align-items:center; justify-content:space-between; width:100%; max-width:1400px; margin:0 auto; }
+.header-left { display:flex; align-items:center; gap:14px; }
+.logo-box { width:42px; height:42px; border-radius:8px; background:rgba(255,255,255,0.12); display:flex; align-items:center; justify-content:center; color:#d4c9a0; }
+.header-title { font-family:'Playfair Display',serif; font-size:18px; font-weight:700; letter-spacing:0.02em; }
+.header-subtitle { font-size:12px; opacity:0.7; letter-spacing:0.03em; }
+.header-badge { font-size:11px; font-weight:500; background:rgba(255,255,255,0.1); padding:4px 12px; border-radius:20px; display:flex; align-items:center; gap:6px; }
+.badge-dot { width:6px; height:6px; border-radius:50%; background:#6fcf97; }
+
+/* Layout */
+.main-layout { display:flex; flex:1; overflow:hidden; position:relative; z-index:1; }
+
+/* Sidebar */
+.sidebar {
+  width:300px; min-width:300px; background:var(--card);
+  border-right:1px solid var(--border); display:flex;
+  flex-direction:column; padding:20px; gap:14px; overflow-y:auto;
+}
+.sidebar-header { display:flex; justify-content:space-between; align-items:baseline; }
+.sidebar-title { font-family:'Playfair Display',serif; font-size:16px; font-weight:600; color:var(--accent); }
+.sidebar-count { font-size:11px; color:var(--text-light); font-weight:500; }
+
+.drop-zone {
+  border:2px dashed var(--border); border-radius:10px; padding:18px 14px;
+  display:flex; flex-direction:column; align-items:center; gap:6px;
+  cursor:pointer; transition:all 0.2s; color:var(--text-light); background:var(--bg-dark);
+}
+.drop-zone:hover,.drop-zone.active { border-color:var(--accent-light); background:var(--accent-pale); color:var(--accent-light); }
+.drop-text { font-size:13px; font-weight:500; }
+.drop-hint { font-size:11px; opacity:0.6; text-align:center; line-height:1.4; }
+
+.file-list { flex:1; display:flex; flex-direction:column; gap:5px; overflow-y:auto; }
+.file-item {
+  display:flex; align-items:center; gap:8px; padding:8px 10px;
+  background:var(--bg-dark); border-radius:8px; border:1px solid var(--border-light);
+  animation:fadeIn 0.3s ease;
+}
+.file-icon { color:var(--red); flex-shrink:0; }
+.file-info { flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; }
+.file-name { font-size:11px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.file-meta { font-size:10px; color:var(--text-light); }
+.file-status { font-size:10px; font-weight:600; }
+.file-status.processing { color:var(--gold); }
+.file-status.ready { color:var(--accent-light); }
+.file-status.error { color:var(--red); }
+.file-remove {
+  background:none; border:none; color:var(--text-light); cursor:pointer;
+  padding:3px; border-radius:4px; display:flex; transition:color 0.15s;
+}
+.file-remove:hover { color:var(--red); }
+.empty-hint { font-size:12px; color:var(--text-light); text-align:center; padding:16px; font-style:italic; }
+
+/* Index status */
+.index-status {
+  background:var(--bg-dark); border-radius:8px; padding:10px 12px;
+  border:1px solid var(--border-light); font-size:11px; color:var(--text-mid);
+}
+.index-status strong { color:var(--accent); }
+.index-row { display:flex; justify-content:space-between; margin-top:4px; }
+
+/* Chat */
+.chat-area { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+.chat-messages { flex:1; overflow-y:auto; padding:24px 32px; display:flex; flex-direction:column; gap:20px; }
+
+.welcome { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:40px; animation:fadeIn 0.5s ease; }
+.welcome-icon { color:var(--gold); opacity:0.4; }
+.welcome-title { font-family:'Playfair Display',serif; font-size:22px; font-weight:600; color:var(--accent); }
+.welcome-text { font-size:14px; color:var(--text-mid); text-align:center; max-width:500px; line-height:1.6; }
+.welcome-examples { margin-top:10px; display:flex; flex-direction:column; gap:8px; width:100%; max-width:520px; }
+.welcome-label { font-size:11px; font-weight:600; color:var(--text-light); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:2px; }
+.example-btn {
+  background:var(--card); border:1px solid var(--border-light); border-radius:8px;
+  padding:10px 14px; font-size:13px; color:var(--text-mid); text-align:left;
+  cursor:pointer; transition:all 0.15s; line-height:1.4; font-family:'Source Sans 3',sans-serif;
+}
+.example-btn:hover { border-color:var(--accent-light); background:var(--accent-pale); }
+
+.msg-user { align-self:flex-end; max-width:70%; animation:fadeIn 0.3s ease; }
+.msg-assistant { align-self:flex-start; max-width:88%; animation:fadeIn 0.3s ease; }
+.msg-label { font-size:10px; font-weight:600; color:var(--accent-light); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px; }
+.msg-label-user { font-size:10px; font-weight:600; color:var(--gold); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px; text-align:right; }
+.msg-content {
+  background:var(--card); border:1px solid var(--border-light); border-radius:10px;
+  padding:14px 18px; font-size:14px; line-height:1.7;
+  box-shadow:0 1px 4px rgba(0,0,0,0.04); white-space:pre-wrap; word-wrap:break-word;
+}
+.msg-attachment {
+  display:inline-flex; align-items:center; gap:6px; background:var(--accent-pale);
+  border:1px solid var(--accent-light); border-radius:6px; padding:4px 10px;
+  font-size:11px; color:var(--accent-light); font-weight:500; margin-bottom:8px;
+}
+.msg-sources {
+  margin-top:8px; padding-top:8px; border-top:1px solid var(--border-light);
+  font-size:11px; color:var(--text-light);
+}
+.msg-sources summary { cursor:pointer; font-weight:600; color:var(--text-mid); }
+.msg-sources-list { margin-top:4px; padding-left:0; list-style:none; }
+.msg-sources-list li { padding:4px 0; border-bottom:1px solid var(--border-light); line-height:1.4; }
+.msg-sources-list li:last-child { border-bottom:none; }
+.source-doc { font-weight:600; color:var(--accent); }
+.source-page { color:var(--gold); }
+
+.loading-dots {
+  display:flex; align-items:center; gap:6px; padding:14px 18px;
+  background:var(--card); border:1px solid var(--border-light); border-radius:10px;
+}
+.loading-dots .dot { animation:pulse 1.2s infinite; color:var(--accent-light); font-size:10px; }
+.loading-text { font-size:13px; color:var(--text-light); margin-left:6px; font-style:italic; }
+
+/* Input */
+.input-area { padding:14px 32px 18px; background:var(--card); border-top:1px solid var(--border-light); }
+.chat-attachment-bar { display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap; }
+.chat-attachment-chip {
+  display:inline-flex; align-items:center; gap:6px; background:var(--accent-pale);
+  border:1px solid var(--accent-light); border-radius:6px; padding:4px 10px;
+  font-size:12px; color:var(--accent); font-weight:500;
+}
+.chat-attachment-chip button { background:none; border:none; color:var(--accent-light); cursor:pointer; display:flex; padding:0; }
+
+.input-box {
+  display:flex; align-items:flex-end; gap:8px;
+  background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:10px 12px 10px 14px;
+}
+.attach-btn {
+  background:none; border:none; color:var(--text-light); cursor:pointer;
+  padding:6px; border-radius:6px; display:flex; transition:all 0.15s; flex-shrink:0;
+}
+.attach-btn:hover { color:var(--accent-light); background:var(--accent-pale); }
+.input-box textarea {
+  flex:1; border:none; outline:none; background:transparent; resize:none;
+  font-size:14px; line-height:1.5; font-family:'Source Sans 3',sans-serif;
+  color:var(--text); max-height:160px;
+}
+.send-btn {
+  background:var(--accent); color:var(--white); border:none; border-radius:8px;
+  width:38px; height:38px; display:flex; align-items:center; justify-content:center;
+  cursor:pointer; flex-shrink:0; transition:all 0.15s;
+}
+.send-btn:hover { background:var(--accent-light); }
+.send-btn:disabled { opacity:0.35; cursor:not-allowed; }
+.disclaimer { font-size:11px; color:var(--text-light); text-align:center; margin-top:8px; }
+
+/* Modal */
+.modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:100;
+  display:flex; align-items:center; justify-content:center; animation:fadeIn 0.3s;
+}
+.modal-box {
+  background:var(--card); border-radius:16px; padding:32px; max-width:440px; width:90%;
+  box-shadow:0 20px 60px rgba(0,0,0,0.2); animation:fadeIn 0.4s;
+}
+.modal-title { font-family:'Playfair Display',serif; font-size:20px; font-weight:600; color:var(--accent); margin-bottom:8px; }
+.modal-desc { font-size:13px; color:var(--text-mid); line-height:1.5; margin-bottom:20px; }
+.modal-input {
+  width:100%; padding:12px 14px; border:1px solid var(--border); border-radius:8px;
+  font-size:14px; font-family:'Source Sans 3',sans-serif; color:var(--text);
+  background:var(--bg); outline:none; margin-bottom:16px;
+}
+.modal-input:focus { border-color:var(--accent-light); }
+.modal-btn {
+  width:100%; padding:12px; background:var(--accent); color:var(--white); border:none;
+  border-radius:8px; font-size:14px; font-weight:600; font-family:'Source Sans 3',sans-serif; cursor:pointer;
+}
+.modal-btn:hover { background:var(--accent-light); }
+.modal-error { color:var(--red); font-size:12px; margin-top:8px; }
+
+@media(max-width:768px){
+  .main-layout{flex-direction:column}
+  .sidebar{width:100%;min-width:unset;max-height:200px;border-right:none;border-bottom:1px solid var(--border);padding:12px}
+  .chat-messages{padding:16px}
+  .input-area{padding:10px 16px 14px}
+  .msg-user,.msg-assistant{max-width:95%}
+  .header-badge{display:none}
+}
+</style>
+</head>
+<body>
+<div id="app">
+<div class="bg-texture"></div>
+
+<div class="modal-overlay" id="apiModal">
+  <div class="modal-box">
+    <h2 class="modal-title">⚖️ Assessoria Jurídica</h2>
+    <p class="modal-desc">Sistema de pareceres jurídicos da Câmara Municipal de General Câmara/RS.<br>Insira a chave de API para iniciar.</p>
+    <input type="password" class="modal-input" id="apiKeyInput" placeholder="sk-ant-api03-..." autocomplete="off">
+    <button class="modal-btn" onclick="submitApiKey()">Entrar</button>
+    <p class="modal-error" id="apiError" style="display:none"></p>
+  </div>
+</div>
+
+<header>
+  <div class="header-inner">
+    <div class="header-left">
+      <div class="logo-box"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M5 6l7-3 7 3"/><path d="M2 12l3-6 3 6a5 5 0 0 1-6 0z"/><path d="M16 12l3-6 3 6a5 5 0 0 1-6 0z"/></svg></div>
+      <div><div class="header-title">Assessoria Jurídica</div><div class="header-subtitle">Câmara Municipal de General Câmara — RS</div></div>
+    </div>
+    <div class="header-badge"><span class="badge-dot"></span> Piloto v1.0</div>
+  </div>
+</header>
+
+<div class="main-layout">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h2 class="sidebar-title">Base Normativa</h2>
+      <span class="sidebar-count" id="fileCount">0 docs</span>
+    </div>
+    <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <span class="drop-text">Arraste PDFs ou clique</span>
+      <span class="drop-hint">CF, Lei Orgânica, Regimento, LDO, LOA, PPA, Estatuto...</span>
+      <input type="file" id="fileInput" accept=".pdf" multiple style="display:none" onchange="handleBaseFiles(event)">
+    </div>
+    <div class="file-list" id="fileList"><p class="empty-hint">Nenhum documento anexado</p></div>
+    <div class="index-status" id="indexStatus" style="display:none"></div>
+  </aside>
+
+  <main class="chat-area">
+    <div class="chat-messages" id="chatMessages">
+      <div class="welcome" id="welcome">
+        <div class="welcome-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M12 3v18"/><path d="M5 6l7-3 7 3"/><path d="M2 12l3-6 3 6a5 5 0 0 1-6 0z"/><path d="M16 12l3-6 3 6a5 5 0 0 1-6 0z"/></svg></div>
+        <h2 class="welcome-title">Assistente Jurídico</h2>
+        <p class="welcome-text">
+          Anexe os documentos normativos na barra lateral. O sistema indexará automaticamente o conteúdo para busca inteligente.<br><br>
+          Use 📎 para anexar um PDF específico (ex: Projeto de Lei) para análise direta.
+        </p>
+        <div class="welcome-examples">
+          <p class="welcome-label">Exemplos de consulta:</p>
+          <button class="example-btn" onclick="setExample(this.innerText)">"Elabore parecer jurídico sobre o PL nº XX/2025 que dispõe sobre..."</button>
+          <button class="example-btn" onclick="setExample(this.innerText)">"Qual o quórum exigido pelo Regimento Interno para aprovação de..."</button>
+          <button class="example-btn" onclick="setExample(this.innerText)">"Analise a compatibilidade do Projeto de Resolução nº XX com a Lei Orgânica"</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <div class="chat-attachment-bar" id="chatAttachBar" style="display:none"></div>
+      <div class="input-box">
+        <button class="attach-btn" onclick="document.getElementById('chatFileInput').click()" title="Anexar PDF para análise direta">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.49"/></svg>
+          <input type="file" id="chatFileInput" accept=".pdf" style="display:none" onchange="handleChatAttach(event)">
+        </button>
+        <textarea id="chatInput" placeholder="Descreva sua consulta jurídica..." rows="1" oninput="autoResize(this)" onkeydown="handleKeyDown(event)"></textarea>
+        <button class="send-btn" id="sendBtn" onclick="handleSend()" disabled>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+      <p class="disclaimer">Parecer de caráter opinativo e não vinculante · Busca inteligente na base normativa</p>
+    </div>
+  </main>
+</div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  CONFIGURAÇÃO — Cole sua API key aqui ou deixe vazio
+// ═══════════════════════════════════════════════════════
+let API_KEY = "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";
+
+if(API_KEY) document.getElementById('apiModal').style.display='none';
+function submitApiKey(){
+  const v=document.getElementById('apiKeyInput').value.trim();
+  if(!v||!v.startsWith('sk-')){document.getElementById('apiError').textContent='Chave inválida';document.getElementById('apiError').style.display='block';return;}
+  API_KEY=v; document.getElementById('apiModal').style.display='none';
+}
+document.getElementById('apiKeyInput').addEventListener('keydown',e=>{if(e.key==='Enter')submitApiKey()});
+
+pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+const SYSTEM_PROMPT = `Você é o Assistente Jurídico da Câmara Municipal de GENERAL CÂMARA - RS, com atuação estritamente técnica.
+
+REGRA PRELIMINAR — VALIDAÇÃO DE COMPETÊNCIA TERRITORIAL:
+Antes de qualquer análise, você DEVE verificar se o documento ou projeto submetido pertence ao Município de GENERAL CÂMARA - RS. Verifique o cabeçalho, ementa, preâmbulo e corpo do documento em busca de referências a outros municípios (ex: "Município de São Jerônimo", "Câmara Municipal de Porto Alegre", etc.).
+- Se o documento for de OUTRO MUNICÍPIO que não General Câmara, você NÃO DEVE emitir parecer. Em vez disso, responda EXCLUSIVAMENTE:
+  "⚠️ INCOMPETÊNCIA TERRITORIAL: O documento submetido pertence ao Município de [NOME DO MUNICÍPIO IDENTIFICADO], e não ao Município de General Câmara/RS. Esta Assessoria Jurídica é vinculada exclusivamente à Câmara Municipal de General Câmara/RS, não possuindo competência para análise de proposições legislativas de outros entes municipais. Favor submeter documento de competência deste Município."
+- Somente prossiga com a análise se o documento for de General Câmara ou se não houver identificação territorial (neste caso, presuma que é de General Câmara e registre a ressalva).
+
+REGRAS ABSOLUTAS:
+1. Manifeste-se EXCLUSIVAMENTE com fundamento nos trechos normativos fornecidos e eventuais PDFs anexados.
+2. VEDADO usar jurisprudência não fornecida, doutrina externa, analogias, internet ou conhecimento externo.
+3. Sem fundamento suficiente: "Não há fundamento suficiente nos documentos anexados para análise conclusiva, sendo necessária a juntada de documentação complementar."
+4. Sem dispositivo específico: "A análise jurídica encontra limitação na ausência de dispositivo normativo específico nos documentos anexados, razão pela qual não é possível manifestação conclusiva."
+5. TRANSCREVA LITERAL E INTEGRALMENTE cada dispositivo citado. Após transcrição, apresente análise fundamentada.
+
+ESTRUTURA PARA PROJETOS DE LEI:
+PARECER JURÍDICO → Identificação → I–RELATÓRIO → II–ANÁLISE JURÍDICA (constitucional, Lei Orgânica, Regimento, legislação, iniciativa, competência, impacto orçamentário, técnica legislativa) → III–CONCLUSÃO (opinativo e não vinculante)
+
+RESOLUÇÃO: Verificar se restringe-se à organização interna da Câmara.
+IMPACTO FINANCEIRO: Analisar LDO, LOA, Lei 14.133/2021 quando houver despesa. Omitir quando não houver.
+VEDAÇÕES: Sem opinião política, mérito administrativo, conveniência política, linguagem opinativa.
+LINGUAGEM: Técnica, formal, institucional, clara, objetiva.
+
+Os TRECHOS RELEVANTES da base normativa foram selecionados por busca semântica e são fornecidos no início da mensagem. Se houver PDF anexado diretamente, é o documento principal a analisar.`;
+
+// ═══════════════════════════════════════════
+//  RAG ENGINE — TF-IDF no browser
+// ═══════════════════════════════════════════
+
+// Portuguese stop words
+const STOPWORDS = new Set(['a','o','e','de','da','do','em','um','uma','para','com','não','que','os','as','dos','das','no','na','por','mais','se','ao','ou','ser','quando','já','está','eu','também','só','pelo','pela','até','isso','ela','ele','entre','depois','sem','mesmo','aos','seus','sua','nas','nos','lhe','sobre','esse','esses','essa','essas','num','numa','este','esta','estes','estas','aquele','aquela','aqueles','aquelas','são','foi','será','ter','tem','seu','qual','como','mas','é','às','à','art','artigo','parágrafo','inciso','alínea','caput','lei','municipal','câmara','município','prefeito','vereador']);
+
+function tokenize(text) {
+  return text.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter(w => w.length > 2 && !STOPWORDS.has(w));
+}
+
+class RAGIndex {
+  constructor() {
+    this.chunks = []; // {id, docName, pageNum, text, tokens}
+    this.df = {};     // document frequency
+    this.totalDocs = 0;
+  }
+
+  addDocument(docName, pages) {
+    // pages = [{pageNum, text}]
+    // Split each page into chunks of ~500 tokens with overlap
+    const CHUNK_SIZE = 1800; // chars ≈ 450 tokens
+    const OVERLAP = 400;
+
+    for (const page of pages) {
+      const text = page.text.trim();
+      if (text.length < 20) continue;
+
+      if (text.length <= CHUNK_SIZE) {
+        this._addChunk(docName, page.pageNum, text);
+      } else {
+        let start = 0;
+        while (start < text.length) {
+          const end = Math.min(start + CHUNK_SIZE, text.length);
+          const chunk = text.slice(start, end);
+          if (chunk.trim().length > 20) {
+            this._addChunk(docName, page.pageNum, chunk);
+          }
+          start += CHUNK_SIZE - OVERLAP;
+        }
+      }
+    }
+    this._rebuildDF();
+  }
+
+  _addChunk(docName, pageNum, text) {
+    const tokens = tokenize(text);
+    const id = this.chunks.length;
+    this.chunks.push({ id, docName, pageNum, text, tokens });
+  }
+
+  _rebuildDF() {
+    this.df = {};
+    this.totalDocs = this.chunks.length;
+    for (const chunk of this.chunks) {
+      const seen = new Set(chunk.tokens);
+      for (const t of seen) {
+        this.df[t] = (this.df[t] || 0) + 1;
+      }
+    }
+  }
+
+  search(query, topK = 40) {
+    const qTokens = tokenize(query);
+    if (qTokens.length === 0) return this.chunks.slice(0, topK);
+
+    // Compute query TF
+    const qTF = {};
+    for (const t of qTokens) qTF[t] = (qTF[t] || 0) + 1;
+
+    // Score each chunk
+    const scores = [];
+    for (const chunk of this.chunks) {
+      let score = 0;
+      const cTF = {};
+      for (const t of chunk.tokens) cTF[t] = (cTF[t] || 0) + 1;
+
+      for (const t of qTokens) {
+        if (!cTF[t]) continue;
+        const tf = cTF[t] / chunk.tokens.length;
+        const idf = Math.log((this.totalDocs + 1) / (1 + (this.df[t] || 0)));
+        score += tf * idf * (qTF[t] || 1);
+      }
+
+      // Bonus for exact phrase matches
+      const lowerText = chunk.text.toLowerCase();
+      const lowerQuery = query.toLowerCase();
+      if (lowerText.includes(lowerQuery)) score *= 2;
+
+      // Bonus for multi-word matches
+      const queryWords = lowerQuery.split(/\s+/).filter(w => w.length > 3);
+      const matchedWords = queryWords.filter(w => lowerText.includes(w));
+      if (queryWords.length > 0) {
+        score *= (1 + matchedWords.length / queryWords.length);
+      }
+
+      if (score > 0) scores.push({ chunk, score });
+    }
+
+    scores.sort((a, b) => b.score - a.score);
+    return scores.slice(0, topK).map(s => s.chunk);
+  }
+
+  removeDocument(docName) {
+    this.chunks = this.chunks.filter(c => c.docName !== docName);
+    this._rebuildDF();
+  }
+
+  get stats() {
+    const docs = new Set(this.chunks.map(c => c.docName));
+    const totalChars = this.chunks.reduce((s, c) => s + c.text.length, 0);
+    return { docs: docs.size, chunks: this.chunks.length, estimatedTokens: Math.ceil(totalChars / 4) };
+  }
+}
+
+const ragIndex = new RAGIndex();
+
+// ═══════════════════════════════════════════
+//  FILE MANAGEMENT
+// ═══════════════════════════════════════════
+
+let baseFiles = []; // {name, size, status, pages}
+let chatAttachments = [];
+let isLoading = false;
+
+const dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('active'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('active'));
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('active'); addBaseFiles(e.dataTransfer.files); });
+
+function handleBaseFiles(e) { addBaseFiles(e.target.files); e.target.value=''; }
+
+async function addBaseFiles(newFiles) {
+  const pdfs = Array.from(newFiles).filter(f => f.type==='application/pdf'||f.name.endsWith('.pdf'));
+  const existing = new Set(baseFiles.map(f => f.name));
+  for (const file of pdfs) {
+    if (existing.has(file.name)) continue;
+    const entry = { name: file.name, size: file.size, status: 'processing', pageCount: 0 };
+    baseFiles.push(entry);
+    renderBaseFiles();
+    try {
+      const ab = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
+      const pages = [];
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        const text = content.items.map(it => it.str).join(' ');
+        pages.push({ pageNum: i, text });
+      }
+      ragIndex.addDocument(file.name, pages);
+      entry.status = 'ready';
+      entry.pageCount = pdf.numPages;
+    } catch (err) {
+      entry.status = 'error';
+      console.error('Erro:', file.name, err);
+    }
+    renderBaseFiles();
+  }
+}
+
+function removeBaseFile(name) {
+  baseFiles = baseFiles.filter(f => f.name !== name);
+  ragIndex.removeDocument(name);
+  renderBaseFiles();
+}
+
+function renderBaseFiles() {
+  const list = document.getElementById('fileList');
+  document.getElementById('fileCount').textContent = `${baseFiles.length} doc${baseFiles.length!==1?'s':''}`;
+
+  if (!baseFiles.length) {
+    list.innerHTML = '<p class="empty-hint">Nenhum documento anexado</p>';
+    document.getElementById('indexStatus').style.display = 'none';
+    return;
+  }
+
+  const labels = { processing:'⏳ Indexando...', ready:'✓ Indexado', error:'✗ Erro' };
+  list.innerHTML = baseFiles.map(f => `
+    <div class="file-item">
+      <div class="file-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+      <div class="file-info">
+        <span class="file-name">${f.name}</span>
+        <span class="file-meta">${(f.size/(1024*1024)).toFixed(1)} MB${f.pageCount?' · '+f.pageCount+' pág.':''}</span>
+        <span class="file-status ${f.status}">${labels[f.status]}</span>
+      </div>
+      <button class="file-remove" onclick="removeBaseFile('${f.name.replace(/'/g,"\\'")}')">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+      </button>
+    </div>
+  `).join('');
+
+  // Index stats
+  const s = ragIndex.stats;
+  const indexEl = document.getElementById('indexStatus');
+  indexEl.style.display = 'block';
+  indexEl.innerHTML = `
+    <strong>Índice de Busca</strong>
+    <div class="index-row"><span>${s.chunks} trechos indexados</span><span>~${(s.estimatedTokens/1000).toFixed(0)}k tokens total</span></div>
+    <div class="index-row"><span>${s.docs} documentos</span><span>~${Math.ceil(s.estimatedTokens/400)} pág.</span></div>
+    <div style="margin-top:6px;color:var(--accent-light);font-weight:600">Busca envia apenas os trechos relevantes (~15-25k tokens por consulta)</div>
+  `;
+}
+
+// ── Chat attachments ──
+function handleChatAttach(e) {
+  chatAttachments = [...chatAttachments, ...Array.from(e.target.files).filter(f=>f.type==='application/pdf'||f.name.endsWith('.pdf'))];
+  renderChatAttach(); e.target.value='';
+}
+function removeChatAttach(i) { chatAttachments.splice(i,1); renderChatAttach(); }
+function renderChatAttach() {
+  const bar = document.getElementById('chatAttachBar');
+  if(!chatAttachments.length){bar.style.display='none';bar.innerHTML='';return;}
+  bar.style.display='flex';
+  bar.innerHTML = chatAttachments.map((f,i) =>
+    `<div class="chat-attachment-chip">📄 ${f.name}<button onclick="removeChatAttach(${i})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>`
+  ).join('');
+}
+
+// ── Chat ──
+function fileToBase64(file){return new Promise((r,j)=>{const f=new FileReader();f.onload=()=>r(f.result.split(',')[1]);f.onerror=()=>j(new Error('Falha'));f.readAsDataURL(file)})}
+function setExample(t){document.getElementById('chatInput').value=t.replace(/^"|"$/g,'');autoResize(document.getElementById('chatInput'));updateSendBtn()}
+function autoResize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,160)+'px';updateSendBtn()}
+function updateSendBtn(){document.getElementById('sendBtn').disabled=!document.getElementById('chatInput').value.trim()||isLoading}
+function handleKeyDown(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();handleSend()}}
+
+function addMsg(role, text, attachNames) {
+  const w=document.getElementById('welcome');if(w)w.remove();
+  const chat=document.getElementById('chatMessages');
+  const div=document.createElement('div');
+  div.className=role==='user'?'msg-user':'msg-assistant';
+  const label=document.createElement('div');
+  label.className=role==='user'?'msg-label-user':'msg-label';
+  label.textContent=role==='user'?'Consulta':'Assessoria Jurídica';
+  div.appendChild(label);
+  if(attachNames)for(const n of attachNames){const c=document.createElement('div');c.className='msg-attachment';c.textContent='📄 '+n;div.appendChild(c);}
+  const content=document.createElement('div');
+  content.className='msg-content';
+  content.textContent=text;
+  div.appendChild(content);
+  chat.appendChild(div);
+  chat.scrollTop=chat.scrollHeight;
+  return { contentEl: content, wrapperEl: div };
+}
+
+function addSourcesInfo(wrapperEl, chunks) {
+  if (!chunks || !chunks.length) return;
+  const docs = {};
+  for (const c of chunks) {
+    if (!docs[c.docName]) docs[c.docName] = new Set();
+    docs[c.docName].add(c.pageNum);
+  }
+  const details = document.createElement('details');
+  details.className = 'msg-sources';
+  let summary = document.createElement('summary');
+  summary.textContent = `📚 ${chunks.length} trechos consultados de ${Object.keys(docs).length} documento(s)`;
+  details.appendChild(summary);
+  const ul = document.createElement('ul');
+  ul.className = 'msg-sources-list';
+  for (const [doc, pages] of Object.entries(docs)) {
+    const sorted = Array.from(pages).sort((a,b) => a-b);
+    const li = document.createElement('li');
+    li.innerHTML = `<span class="source-doc">${doc}</span> — <span class="source-page">pág. ${sorted.join(', ')}</span>`;
+    ul.appendChild(li);
+  }
+  details.appendChild(ul);
+  wrapperEl.appendChild(details);
+}
+
+function addLoading(){
+  const w=document.getElementById('welcome');if(w)w.remove();
+  const chat=document.getElementById('chatMessages');
+  const d=document.createElement('div');d.className='msg-assistant';d.id='loadingMsg';
+  d.innerHTML=`<div class="msg-label">Assessoria Jurídica</div><div class="loading-dots"><span class="dot" style="animation-delay:0ms">●</span><span class="dot" style="animation-delay:300ms">●</span><span class="dot" style="animation-delay:600ms">●</span><span class="loading-text">Buscando trechos relevantes...</span></div>`;
+  chat.appendChild(d);chat.scrollTop=chat.scrollHeight;
+}
+function updateLoadingText(t){const el=document.querySelector('#loadingMsg .loading-text');if(el)el.textContent=t;}
+function removeLoading(){const el=document.getElementById('loadingMsg');if(el)el.remove();}
+
+async function handleSend() {
+  const input=document.getElementById('chatInput');
+  const text=input.value.trim();
+  if(!text||isLoading)return;
+  if(!API_KEY){document.getElementById('apiModal').style.display='flex';return;}
+
+  const hasBase = baseFiles.some(f=>f.status==='ready');
+  if(!hasBase&&!chatAttachments.length){
+    addMsg('user',text);
+    addMsg('assistant','⚠️ Nenhum documento anexado. Adicione documentos na barra lateral ou use 📎.');
+    input.value='';autoResize(input);return;
+  }
+
+  const aNames=chatAttachments.map(f=>f.name);
+  addMsg('user',text,aNames);
+  input.value='';autoResize(input);
+  isLoading=true;updateSendBtn();
+  addLoading();
+
+  let relevantChunks = [];
+
+  try {
+    // 1. RAG search
+    if (hasBase) {
+      relevantChunks = ragIndex.search(text, 40);
+      updateLoadingText(`${relevantChunks.length} trechos encontrados. Consultando IA...`);
+    }
+
+    // 2. Build content
+    const userContent = [];
+
+    if (relevantChunks.length > 0) {
+      // Limit to ~25k tokens worth of context
+      let contextText = '';
+      let tokenCount = 0;
+      const MAX_CONTEXT_TOKENS = 25000;
+
+      for (const chunk of relevantChunks) {
+        const chunkTokens = Math.ceil(chunk.text.length / 4);
+        if (tokenCount + chunkTokens > MAX_CONTEXT_TOKENS) break;
+        contextText += `\n\n[${chunk.docName} — Página ${chunk.pageNum}]\n${chunk.text}`;
+        tokenCount += chunkTokens;
+      }
+
+      userContent.push({
+        type: "text",
+        text: `[TRECHOS RELEVANTES DA BASE NORMATIVA — selecionados por busca semântica]\n${contextText}\n\n[FIM DOS TRECHOS — ${relevantChunks.length} trechos de ${ragIndex.stats.docs} documentos]`
+      });
+    }
+
+    // 3. Chat PDF attachments
+    for (const file of chatAttachments) {
+      const b64 = await fileToBase64(file);
+      userContent.push({ type:"document", source:{ type:"base64", media_type:"application/pdf", data:b64 }});
+    }
+
+    // 4. User prompt
+    userContent.push({ type:"text", text });
+
+    // 5. API call
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':API_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:8000,stream:true,system:SYSTEM_PROMPT,messages:[{role:'user',content:userContent}]})
+    });
+
+    if(!response.ok){const err=await response.json().catch(()=>({}));throw new Error(err?.error?.message||`Erro ${response.status}`);}
+
+    removeLoading();
+    const { contentEl, wrapperEl } = addMsg('assistant','');
+    chatAttachments=[];renderChatAttach();
+
+    const reader=response.body.getReader();
+    const decoder=new TextDecoder();
+    let full='',buffer='';
+
+    while(true){
+      const{done,value}=await reader.read();
+      if(done)break;
+      buffer+=decoder.decode(value,{stream:true});
+      const lines=buffer.split('\n');
+      buffer=lines.pop()||'';
+      for(const line of lines){
+        if(line.startsWith('data: ')){
+          const data=line.slice(6).trim();
+          if(data==='[DONE]')continue;
+          try{
+            const p=JSON.parse(data);
+            if(p.type==='content_block_delta'&&p.delta?.text){
+              full+=p.delta.text;
+              contentEl.textContent=full;
+              document.getElementById('chatMessages').scrollTop=document.getElementById('chatMessages').scrollHeight;
+            }
+          }catch{}
+        }
+      }
+    }
+    if(!full)contentEl.textContent='Resposta vazia. Tente novamente.';
+
+    // Show sources
+    addSourcesInfo(wrapperEl, relevantChunks);
+
+  }catch(err){
+    removeLoading();
+    addMsg('assistant',`❌ Erro: ${err.message}`);
+  }finally{
+    isLoading=false;updateSendBtn();
+  }
+}
+</script>
+</body>
+</html>
