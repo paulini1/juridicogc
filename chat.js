@@ -1,7 +1,7 @@
 // Vercel Serverless Function — Proxy para API da Anthropic
 // A API key fica segura nas variáveis de ambiente do Vercel
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -34,28 +34,28 @@ export default async function handler(req, res) {
     });
 
     if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      return res.status(response.status).json(err);
+      const err = await response.text().catch(() => '{}');
+      res.status(response.status);
+      res.setHeader('Content-Type', 'application/json');
+      return res.end(err);
     }
 
-    // Stream the response back to the client
+    // Stream the response back to the client using Node.js streams
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
 
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
+    // Convert Web ReadableStream to Node stream and pipe
+    const { Readable } = require('stream');
+    const nodeStream = Readable.fromWeb(response.body);
+    nodeStream.pipe(res);
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      const chunk = decoder.decode(value, { stream: true });
-      res.write(chunk);
-    }
-
-    res.end();
   } catch (err) {
     console.error('Proxy error:', err);
-    return res.status(500).json({ error: 'Erro interno do proxy' });
+    if (!res.headersSent) {
+      return res.status(500).json({ error: 'Erro interno do proxy: ' + err.message });
+    }
+    res.end();
   }
-}
+};
